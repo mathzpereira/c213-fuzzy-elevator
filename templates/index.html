@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Controle Fuzzy para Elevador</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="/static/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <nav class="navbar navbar-dark">
+                    <div class="container-fluid">
+                        <span class="navbar-brand mb-0 h1">
+                            <i class="fas fa-microchip me-2"></i>
+                            Elevador VILLARTA COMPAQ Slim
+                        </span>
+                    </div>
+                </nav>
+            </div>
+        </div>
+
+        <div class="row mt-4 gx-4">
+            <div class="col-lg-6">
+                <div class="card chart-card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title"><i class="fas fa-chart-line me-2"></i>Posicionamento</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="position-chart"></div>
+                    </div>
+                </div>
+                
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h5 class="card-title"><i class="fas fa-tachometer-alt me-2"></i>Potência do Sistema</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="motor-chart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card elevator-panel mb-4">
+                    <div class="card-header text-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-elevator me-2"></i>PAINEL DE CONTROLE
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-4">
+                            <div class="elevator-status">
+                                <div class="direction-indicators">
+                                    <i class="fas fa-arrow-up direction-up" id="direction-up"></i>
+                                    <span class="current-floor" id="current-floor-display">T</span>
+                                    <i class="fas fa-arrow-down direction-down" id="direction-down"></i>
+                                </div>
+                                <div class="status-text" id="status-text">Sistema em Standby - Térreo</div>
+                            </div>
+                        </div>
+
+                        <div class="floor-buttons">
+                            <div class="row g-2 mb-2">
+                                <div class="col-4"><button class="btn btn-floor" data-floor="floor_6" onclick="requestFloor('floor_6')">6</button></div>
+                                <div class="col-4"><button class="btn btn-floor" data-floor="floor_7" onclick="requestFloor('floor_7')">7</button></div>
+                                <div class="col-4"><button class="btn btn-floor" data-floor="floor_8" onclick="requestFloor('floor_8')">8</button></div>
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-4"><button class="btn btn-floor" data-floor="floor_3" onclick="requestFloor('floor_3')">3</button></div>
+                                <div class="col-4"><button class="btn btn-floor" data-floor="floor_4" onclick="requestFloor('floor_4')">4</button></div>
+                                <div class="col-4"><button class="btn btn-floor" data-floor="floor_5" onclick="requestFloor('floor_5')">5</button></div>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-4"><button class="btn btn-floor btn-ground" data-floor="ground" onclick="requestFloor('ground')">T</button></div>
+                                <div class="col-4"><button class="btn btn-floor" data-floor="floor_1" onclick="requestFloor('floor_1')">1</button></div>
+                                <div class="col-4"><button class="btn btn-floor" data-floor="floor_2" onclick="requestFloor('floor_2')">2</button></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <div class="card data-card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0"><i class="fas fa-satellite-dish me-2"></i>Dados em Tempo Real</h5>
+                            </div>
+                            <div class="card-body">
+                                 <div class="realtime-info">
+                                     <div><strong>Posição Atual:</strong> <span id="current-position">4.00m</span></div>
+                                     <div><strong>Potência do Motor:</strong> <span id="motor-power">0%</span></div>
+                                     <div><strong>Desvio (Erro):</strong> <span id="position-error">0.00m</span></div>
+                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="card data-card">
+                            <div class="card-header">
+                                <h5 class="card-title"><i class="fas fa-stopwatch me-2"></i>Métricas da Viagem</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="trip-metrics">
+                                    <div class="metric-item">
+                                        <label><i class="fas fa-hourglass-half me-2"></i>Tempo da Viagem</label>
+                                        <span id="movement-time">0.0s</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <label><i class="fas fa-running me-2"></i>Velocidade Média</label>
+                                        <span id="avg-speed">0.00m/s</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let ws = null;
+        let positionData = { x: [], y: [], target: [] };
+        let motorData = { x: [], y: [] };
+        let currentFloor = 'ground';
+        let isMoving = false;
+        let startTime = null;
+        let startPosition = null;
+
+        const floorMap = {
+            'ground': 'T', 'floor_1': '1', 'floor_2': '2', 'floor_3': '3', 'floor_4': '4',
+            'floor_5': '5', 'floor_6': '6', 'floor_7': '7', 'floor_8': '8'
+        };
+        const floorPositions = {
+            'ground': 4, 'floor_1': 8, 'floor_2': 11, 'floor_3': 14, 'floor_4': 17,
+            'floor_5': 20, 'floor_6': 23, 'floor_7': 26, 'floor_8': 29,
+        };
+
+        function getCurrentFloorFromPosition(position) {
+            let closestFloor = 'ground';
+            let minDistance = Infinity;
+            for (const [floor, floorPos] of Object.entries(floorPositions)) {
+                const distance = Math.abs(position - floorPos);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestFloor = floor;
+                }
+            }
+            return closestFloor;
+        }
+
+        function updateFloorPanelWithPosition(positionValue, isMovingStatus) {
+            const positionFloor = getCurrentFloorFromPosition(positionValue);
+            document.querySelectorAll('.btn-floor').forEach(button => {
+                const floor = button.getAttribute('data-floor');
+                button.classList.remove('current', 'passing');
+                if (isMovingStatus) {
+                    if (floor === positionFloor) button.classList.add('passing');
+                } else {
+                    if (floor === currentFloor) button.classList.add('current');
+                }
+                button.disabled = isMovingStatus;
+            });
+        }
+
+        function initWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            ws = new WebSocket(wsUrl);
+            ws.onopen = () => { console.log('WebSocket connected'); };
+            ws.onmessage = (event) => handleWebSocketMessage(JSON.parse(event.data));
+            ws.onclose = () => { console.log('WebSocket disconnected'); setTimeout(initWebSocket, 5000); };
+            ws.onerror = (error) => { console.error('WebSocket error:', error); };
+        }
+
+        function handleWebSocketMessage(message) {
+            if (message.type === 'position_update') {
+                updatePosition(message.data);
+            } else if (message.type === 'status_update' || message.type === 'initial_status') {
+                updateStatus(message.data);
+            }
+        }
+
+        function updatePosition(data) {
+            document.getElementById('current-position').textContent = `${data.current_position.toFixed(2)}m`;
+            document.getElementById('motor-power').textContent = `${Math.abs(data.motor_power).toFixed(1)}%`;
+            document.getElementById('position-error').textContent = `${data.error >= 0 ? '+' : ''}${data.error.toFixed(3)}m`;
+
+            const timestamp = new Date(data.timestamp * 1000);
+            positionData.x.push(timestamp);
+            positionData.y.push(data.current_position);
+            positionData.target.push(data.target_position);
+            motorData.x.push(timestamp);
+            motorData.y.push(Math.abs(data.motor_power));
+            
+            const maxPoints = 150;
+            if (positionData.x.length > maxPoints) {
+                positionData.x.shift();
+                positionData.y.shift();
+                positionData.target.shift();
+                motorData.x.shift();
+                motorData.y.shift();
+            }
+            updateCharts();
+            
+            const wasMoving = isMoving;
+            isMoving = data.is_moving;
+
+            if (isMoving && !wasMoving) {
+                startTime = data.timestamp;
+                startPosition = data.current_position;
+            } else if (!isMoving && wasMoving && startTime && data.timestamp && startPosition !== null) {
+                const movementTime = data.timestamp - startTime;
+                const distanceTraveled = Math.abs(data.current_position - startPosition);
+                
+                if (movementTime > 0.1 && movementTime < 120) {
+                    document.getElementById('movement-time').textContent = `${movementTime.toFixed(1)}s`;
+                    const avgSpeed = distanceTraveled / movementTime;
+                    document.getElementById('avg-speed').textContent = `${avgSpeed.toFixed(2)}m/s`;
+                }
+                startTime = null;
+                startPosition = null;
+            }
+            
+            updateDynamicStatusText(data.current_position, isMoving, data.target_floor);
+            updateFloorPanelWithPosition(data.current_position, isMoving);
+        }
+
+        function updateStatus(data) {
+            const wasMoving = isMoving;
+            currentFloor = data.current_floor;
+            isMoving = data.is_moving;
+            
+            if (isMoving && !wasMoving) {
+                startTime = data.timestamp;
+                startPosition = data.current_position || floorPositions[currentFloor] || 4.0;
+            } else if (!isMoving && wasMoving && startTime && data.timestamp) {
+                const movementTime = data.timestamp - startTime;
+                if (movementTime > 0.1 && movementTime < 120) {
+                    document.getElementById('movement-time').textContent = `${movementTime.toFixed(1)}s`;
+                    if (startPosition !== null && data.current_position !== undefined) {
+                         const distanceTraveled = Math.abs(data.current_position - startPosition);
+                         const avgSpeed = distanceTraveled / movementTime;
+                         document.getElementById('avg-speed').textContent = `${avgSpeed.toFixed(2)}m/s`;
+                    }
+                }
+                startTime = null;
+                startPosition = null;
+            }
+
+            document.getElementById('current-floor-display').textContent = floorMap[currentFloor] || currentFloor;
+            document.getElementById('direction-up').classList.toggle('active', data.direction === 'up');
+            document.getElementById('direction-down').classList.toggle('active', data.direction === 'down');
+            
+            updateDynamicStatusText(floorPositions[currentFloor], isMoving, data.target_floor);
+            updateFloorPanelWithPosition(floorPositions[currentFloor], isMoving);
+        }
+
+        function updateDynamicStatusText(position, isMovingStatus, targetFloor) {
+            const realTimeFloor = getCurrentFloorFromPosition(position);
+            const realTimeFloorDisplay = floorMap[realTimeFloor];
+            let statusText = '';
+            if (isMovingStatus) {
+                const targetFloorDisplay = floorMap[targetFloor] || targetFloor;
+                statusText = `Movendo para o ${targetFloorDisplay === 'T' ? 'Térreo' : targetFloorDisplay + 'º'}`;
+                if (realTimeFloorDisplay !== targetFloor) {
+                    statusText += ` (passando pelo ${realTimeFloorDisplay === 'T' ? 'Térreo' : realTimeFloorDisplay + 'º'})`;
+                }
+            } else {
+                statusText = `Parado no ${realTimeFloorDisplay === 'T' ? 'Térreo' : realTimeFloorDisplay + 'º andar'}`;
+            }
+            document.getElementById('status-text').textContent = statusText;
+        }
+        
+        function requestFloor(floor) {
+            if (ws && ws.readyState === WebSocket.OPEN && !isMoving) {
+                ws.send(JSON.stringify({ type: 'floor_request', floor: floor }));
+            }
+        }
+        
+        function initializeCharts() {
+            const positionLayout = {
+                xaxis: { title: 'Tempo' },
+                yaxis: { title: 'Posição (m)' },
+                margin: { t: 20, r: 20, b: 40, l: 50 },
+                showlegend: true,
+                legend: { x: 0.01, y: 0.99, bgcolor: 'rgba(255,255,255,0.6)', bordercolor: '#ddd', borderwidth: 1 }
+            };
+
+            const motorLayout = {
+                xaxis: { title: 'Tempo' },
+                yaxis: { title: 'Potência (%)' },
+                margin: { t: 20, r: 20, b: 40, l: 50 },
+                showlegend: false
+            };
+            
+            Plotly.newPlot('position-chart', [
+                { x: [], y: [], type: 'scatter', mode: 'lines', name: 'Posição', line: {color: '#6366f1', width: 2.5} }, 
+                { x: [], y: [], type: 'scatter', mode: 'lines', name: 'Alvo', line: {color: '#ef4444', dash: 'dash'} }
+            ], positionLayout, {responsive: true, displaylogo: false});
+
+            Plotly.newPlot('motor-chart', [
+                { x: [], y: [], type: 'scatter', mode: 'lines', name: 'Potência', line: {color: '#10b981', width: 2} }
+            ], motorLayout, {responsive: true, displaylogo: false});
+        }
+        
+        function updateCharts() {
+            Plotly.restyle('position-chart', {
+                x: [positionData.x, positionData.x],
+                y: [positionData.y, positionData.target]
+            });
+            Plotly.restyle('motor-chart', {
+                x: [motorData.x],
+                y: [motorData.y]
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initWebSocket();
+            initializeCharts();
+            updateFloorPanelWithPosition(floorPositions['ground'], false);
+        });
+    </script>
+</body>
+</html>
